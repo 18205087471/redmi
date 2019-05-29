@@ -1,0 +1,70 @@
+cat tac
+rev
+-t对齐
+-n行号
+正则指令：
+p 打印
+d 删除
+s 替换s/旧/新/g
+a 追加
+i 插入
+c 替换行
+
+sed -n '${=;p;p;p}' /etc/passwd
+sed -n '${=;p}' /etc/passwd
+sed '=' /etc/passwd
+
+awk  [选项]  '[条件]{指令}'  文件
+awk  [选项]  ' BEGIN{指令} {指令} END{指令}'  文件
+
+格式化输出/etc/passwd文件
+awk  -F: 'BEGIN{print "user","uid","home"}''{print $1,$3,$6}' /etc/passwd |column --t
+awk -F: 'BEGIN{print"User\tUID\tHome"}{print $1"\t"$3"\t"$6} END{print NR}' /etc/passwd
+
+
+
+awk -F: '$4!~/0/{print $4}' /etc/passwd
+
+sed -rn 's/root:([^:]+).*/\1/p' /etc/shadow
+
+awk -F: '$3==0&&$4==0{print $1}' /etc/passwd
+
+
+awk -F: '$3==0||$4==0{print $1}' /etc/passwd
+
+
+awk '{ip[$1]++}END{for(i in ip){print i,ip[i]}}' /var/log/httpd/access_log 
+
+统计占用内存最多的进程
+             CPU 
+ps -eo %mem,%cpu,ucmd|awk '{u[$3]+=$2}END{for(i in u)print u[i],i}'|sort -n
+
+定义数组的格式：数组名[下标]=元素值
+调用数组的格式：数组名[下标]
+遍历数组的用法：for(变量 in 数组名){print 数组名[变量]}
+字符串需要使用双引号
+NR	文件当前行的行号
+NF	文件当前行的列数（有几列)
+
+awk 'BEGIN{x=0}/bash$/{x++}END{print x}' /etc/passwd
+
+awk  if语句
+
+
+
+awk -F: '{if($3<=1000){i++}}END{print i}' /etc/passwd
+
+awk -F: '{if($7~/bash$/){i++}}END{print i}'  /etc/passwd
+
+awk -F: '{if($7~/bash$/){i++}else{j++}} END{print i,j}' /etc/passwd
+
+
+
+
+定义数组的格式：数组名[下标]=元素值
+调用数组的格式：数组名[下标]
+遍历数组的用法：for(变量 in 数组名){print 数组名[变量]}
+
+
+
+

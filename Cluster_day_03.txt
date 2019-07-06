@@ -1,0 +1,170 @@
+176.4.20.2
+存储：
+	DAS:直连存储(direct access storage)
+		IDE,SATA,SAS	扩展性差
+	NAS:网络附加存储(nfs,http,samba,ftp):文件系统
+	block块设备，分区，格式化--->(ext3,ntfs,fat32)
+	SAN:存储区域网络　(ISCSI):共享块设备
+	分布式存储:集群较率高，无限扩容
+Hadoop:国产,大数据用
+红帽的Ceph:开源
+
+去IOE:(IBM,Oralce,EMC)
+osd：存储设备		
+monitor(取余算法)：集群监控组件---->至少三台
+ceph[3副本,自动切割为小文件]
+并发同时进行
+mds文件系统
+RGW:对象存储网关
+
+免交互获取私钥
+ssh-keygen   -f /root/.ssh/id_rsa    -N ''
+	vdb1	vdb2
+node1	node2	node3	
+		固态		磁盘1T
+		缓存盘	存储盘
+OSD:
+	缓存盘	数据盘
+	parted手动分区，修改权限
+
+################################################
+
+Ceph块存储	120G
+存储池--->创建镜像(10G)----	/dev/磁盘
+		创建镜像(10G)----	
+一．安装前准备
+1.实现无密码连接
+for i in 10  11  12  13
+ do
+     ssh-copy-id  192.168.4.$i
+ done
+2.实现域名解析
+for i in 10  11  12  13
+do
+scp  /etc/hosts  192.168.4.$i:/etc/
+done
+3.配yum源
+[mon]
+name=mon
+baseurl=ftp://192.168.4.254/ceph/MON
+gpgcheck=0
+[osd]
+name=osd
+baseurl=ftp://192.168.4.254/ceph/OSD
+gpgcheck=0
+[tools]
+name=tools
+baseurl=ftp://192.168.4.254/ceph/Tools
+gpgcheck=0
+
+for i in  10  11  12  13
+do
+scp  /etc/yum.repos.d/ceph.repo  192.168.4.$i:/etc/yum.repos.d/
+done
+
+4.配置NTP时间同步
+vim /etc/chrony.conf
+… …
+server 192.168.4.254   iburst
+]# for i in 10 11 12 13
+do
+     scp /etc/chrony.conf 192.168.4.$i:/etc/
+     ssh 192.168.4.$i "systemctl restart chronyd"
+done
+
+######################################################
+
+二：准备存储磁盘
+添加三块磁盘
+１.装包
+]#  yum -y install ceph-deploy
+]#  ceph-deploy  --help
+]#  ceph-deploy mon --help
+创建目录
+[root@node1 ~]#  mkdir ceph-cluster
+[root@node1 ~]#  cd ceph-cluster
+2.部署Ceph集群，生成Ceph配置文件
+[root@node1 ceph-cluster]# ceph-deploy new node1 node2 node3
+[root@node1 ceph-cluster]# for i in node1 node2 node3
+do
+    ssh  $i "yum -y install ceph-mon ceph-osd ceph-mds ceph-radosgw"
+done 
+初始化mon服务
+ceph-deploy mon create-initial
+3.创建OSD
+for i in node1 node2 node3
+do
+     ssh $i "parted /dev/vdb mklabel gpt"
+     ssh $i "parted /dev/vdb mkpart primary 1 50%"
+     ssh $i "parted /dev/vdb mkpart primary 50% 100%"
+ done
+修改分区权限
+chown  ceph.ceph  /dev/vdb1
+chown  ceph.ceph  /dev/vdb2
+vim /etc/udev/rules.d/70-vdb.rules
+ENV{DEVNAME}=="/dev/vdb1",OWNER="ceph",GROUP="ceph"
+ENV{DEVNAME}=="/dev/vdb2",OWNER="ceph",GROUP="ceph"
+初始化清空磁盘数据
+ceph-deploy disk  zap  node1:vdc   node1:vdd    
+ceph-deploy disk  zap  node2:vdc   node2:vdd
+ceph-deploy disk  zap  node3:vdc   node3:vdd   
+创建OSD存储空间
+ceph-deploy osd create node1:vdc:/dev/vdb1 node1:vdd:/dev/vdb2 #远程机器同样操作  
+//创建osd存储设备，vdc为集群提供存储空间，vdb1提供JOURNAL缓存，
+//一个存储设备对应一个缓存设备，缓存需要SSD，不需要很大
+验证测试
+ceph -s
+
+3.创建块存储
+创建镜像
+ceph osd lspools	#查看存储池
+rbd create demo-image --image-feature  layering --size 10G
+rbd create rbd/image --image-feature  layering --size 10G
+rbd list
+rbd info demo-image
+动态调整
+rbd resize --size 15G image
+rbd info image
+4.客户端通过KRBD访问
+#客户端需要安装ceph-common软件包
+#拷贝配置文件（否则不知道集群在哪）
+#拷贝连接密钥（否则无连接权限）
+[root@client ~]# yum -y  install ceph-common
+[root@client ~]# scp 192.168.4.11:/etc/ceph/ceph.conf  /etc/ceph/
+[root@client ~]# scp 192.168.4.11:/etc/ceph/ceph.client.admin.keyring \
+/etc/ceph/
+[root@client ~]# rbd map image
+[root@client ~]#  lsblk
+[root@client ~]# rbd showmapped
+id pool image snap device    
+0  rbd  image -    /dev/rbd0
+客户端格式化、挂载分区
+[root@client ~]# mkfs.xfs /dev/rbd0
+[root@client ~]# mount /dev/rbd0 /mnt/
+[root@client ~]# echo "test" > /mnt/test.txt
+5.创建镜像快照
+rbd snap ls image
+rbd snap create image --snap image-snap1
+rbd snap ls image
+rm  -rf   /mnt/test.txt
+[root@client ~]# umount  /mnt
+6. 还原快照
+ rbd snap rollback image --snap image-snap1
+#客户端重新挂载分区
+[root@client ~]# mount /dev/rbd0 /mnt/
+[root@client ~]# ls  /mnt
+7.克隆快照
+[root@node1 ~]#  rbd snap protect image --snap image-snap1
+[root@node1 ~]#  rbd snap rm image --snap image-snap1    //会失败
+[root@node1 ~]# rbd clone \
+image --snap image-snap1 image-clone --image-feature layering
+//使用image的快照image-snap1克隆一个新的名称为image-clone镜像
+
+
+
+
+
+
+
+
+

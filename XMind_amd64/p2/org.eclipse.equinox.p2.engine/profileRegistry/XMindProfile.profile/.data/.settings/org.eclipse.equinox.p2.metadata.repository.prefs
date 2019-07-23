@@ -1,0 +1,16 @@
+eclipse.preferences.version=1
+repositories/file\:_root_.eclipseextension/description=
+repositories/file\:_root_.eclipseextension/enabled=true
+repositories/file\:_root_.eclipseextension/isSystem=true
+repositories/file\:_root_.eclipseextension/name=/root/.eclipseextension
+repositories/file\:_root_.eclipseextension/provider=
+repositories/file\:_root_.eclipseextension/type=org.eclipse.equinox.p2.extensionlocation.metadataRepository
+repositories/file\:_root_.eclipseextension/uri=file\:/root/.eclipseextension
+repositories/file\:_root_.eclipseextension/version=1
+repositories/file\:_root_XMind_amd64_configuration_org.eclipse.osgi_717_data_listener_1925729951/description=
+repositories/file\:_root_XMind_amd64_configuration_org.eclipse.osgi_717_data_listener_1925729951/isSystem=true
+repositories/file\:_root_XMind_amd64_configuration_org.eclipse.osgi_717_data_listener_1925729951/name=dropins
+repositories/file\:_root_XMind_amd64_configuration_org.eclipse.osgi_717_data_listener_1925729951/provider=
+repositories/file\:_root_XMind_amd64_configuration_org.eclipse.osgi_717_data_listener_1925729951/type=org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository
+repositories/file\:_root_XMind_amd64_configuration_org.eclipse.osgi_717_data_listener_1925729951/uri=file\:/root/XMind_amd64/configuration/org.eclipse.osgi/717/data/listener_1925729951/
+repositories/file\:_root_XMind_amd64_configuration_org.eclipse.osgi_717_data_listener_1925729951/version=1

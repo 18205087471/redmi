@@ -1,1 +1,1 @@
-# redmi
+# config
